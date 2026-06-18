@@ -1,0 +1,519 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NiharOTPbot v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            color: #1f2937;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            border-top-color: #3b82f6;
+            -webkit-animation: spinner 1s linear infinite;
+            animation: spinner 1s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- App Header -->
+    <header class="bg-white py-4 px-5 flex items-center justify-between shadow-sm sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl shadow-inner">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight">Nihar<span class="text-blue-500">OTPbot</span> <span class="text-xs text-slate-400 font-semibold align-top">v2.0</span></h1>
+        </div>
+        <div class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+            Original API
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-lg mx-auto px-4 py-6 flex flex-col gap-6">
+        
+        <!-- 1. Setup Section -->
+        <div id="setup-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-in">
+            <h2 class="text-lg font-bold mb-1 text-slate-800">Make Your Custom Email</h2>
+            <p class="text-slate-500 text-xs mb-5">Create an email address with your own name.</p>
+            
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="relative flex-grow">
+                        <i class="fa-solid fa-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="username-input" class="w-full bg-slate-50 border border-slate-200 py-3 pl-10 pr-3 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white transition text-sm font-medium lowercase" placeholder="Enter name (e.g. nihar-pro)">
+                    </div>
+                    <div class="relative min-w-[140px]">
+                        <i class="fa-solid fa-at absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <select id="domain-select" class="w-full bg-slate-50 border border-slate-200 py-3 pl-8 pr-8 rounded-xl focus:outline-none focus:border-blue-500 transition text-sm font-medium appearance-none cursor-pointer">
+                            <option value="">Loading domains...</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <button onclick="createCustomAccount()" id="btn-create" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-blue-800 transition shadow-md shadow-blue-500/20 mt-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Create My Email
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Active Email Section -->
+        <div id="active-email-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 fade-in hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Your Active Email</h2>
+                <button onclick="resetAccount()" class="text-red-500 text-xs font-bold flex items-center gap-1 bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition">
+                    <i class="fa-solid fa-trash-can"></i> Delete & New
+                </button>
+            </div>
+            
+            <div class="relative mb-4">
+                <input type="text" id="current-email" readonly class="w-full bg-blue-50 border border-blue-200 py-4 px-4 rounded-xl text-center text-blue-700 font-bold text-lg focus:outline-none">
+            </div>
+            
+            <button onclick="copyEmail()" id="btn-copy" class="w-full bg-slate-800 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 active:bg-slate-700 transition">
+                <i class="fa-regular fa-copy"></i> Copy Address
+            </button>
+        </div>
+
+        <!-- 3. Inbox Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden fade-in flex-grow flex flex-col" style="min-height: 40vh;">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-inbox text-blue-500 text-lg"></i>
+                    <h3 class="font-bold text-slate-800">Live Inbox</h3>
+                    <span id="mail-count" class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-500 font-medium">Auto Sync</span>
+                    <button onclick="fetchMessages(true)" class="text-slate-500 hover:text-blue-600 transition p-1">
+                        <i id="refresh-icon" class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="email-list" class="flex-grow divide-y divide-slate-100 bg-white overflow-y-auto">
+                <div class="flex flex-col items-center justify-center h-full text-slate-400 py-12">
+                    <i class="fa-regular fa-envelope-open text-4xl mb-3 opacity-50"></i>
+                    <p class="text-sm font-medium">Create an email to receive messages</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Email Reader Modal -->
+    <div id="email-modal" class="fixed inset-0 bg-white z-50 hidden flex-col transform transition-transform translate-x-full duration-300 max-w-lg mx-auto shadow-2xl">
+        <div class="px-4 py-4 border-b border-slate-100 bg-white flex items-center shadow-sm">
+            <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full transition">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h3 class="font-bold text-slate-800 line-clamp-1 flex-grow px-4" id="modal-subject">Subject</h3>
+        </div>
+        <div class="p-5 border-b border-slate-50 bg-slate-50">
+            <div class="font-bold text-slate-800 text-base" id="modal-sender">Sender Name</div>
+            <div class="text-xs text-slate-500 mt-1" id="modal-sender-email">sender@example.com</div>
+            <div class="text-[10px] text-slate-400 mt-2 font-medium" id="modal-date">Date</div>
+        </div>
+        <div class="p-4 overflow-y-auto flex-grow relative bg-white">
+            <div id="modal-loader" class="absolute inset-0 bg-white flex items-center justify-center z-10 hidden">
+                 <div class="loader rounded-full border-4 border-t-4 border-blue-500 h-8 w-8"></div>
+            </div>
+            <div id="modal-body" class="text-slate-800 w-full h-full"></div>
+        </div>
+    </div>
+
+    <!-- Update Checker Popup -->
+    <div id="update-popup" class="fixed inset-0 bg-black/80 z-[100] hidden items-center justify-center p-6 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl border border-blue-500">
+            <i class="fa-solid fa-robot text-5xl text-blue-600 mb-4 animate-bounce"></i>
+            <h2 class="text-2xl font-black mb-2 text-slate-800">New Update!</h2>
+            <p class="text-slate-500 text-sm mb-6 font-medium">NiharOTPbot ka naya version aa gaya hai. App chalane ke liye pehle update karein.</p>
+            <button id="update-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/30 transition">
+                <i class="fa-solid fa-download"></i> Update Now
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-[60] flex items-center gap-2 text-sm font-bold whitespace-nowrap">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-blue-400"></i> <span id="toast-msg">Message</span>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Original Working API (Mail.tm)
+        const API_BASE = 'https://api.mail.tm';
+        
+        let currentEmail = '';
+        let currentToken = '';
+        let autoRefreshInterval = null;
+        let isFetching = false;
+        let lastMessageId = null;
+
+        // DOM Elements
+        const setupSection = document.getElementById('setup-section');
+        const activeSection = document.getElementById('active-email-section');
+        const usernameInput = document.getElementById('username-input');
+        const domainSelect = document.getElementById('domain-select');
+        const currentEmailInput = document.getElementById('current-email');
+        const btnCreate = document.getElementById('btn-create');
+        const emailList = document.getElementById('email-list');
+        const mailCount = document.getElementById('mail-count');
+        const refreshIcon = document.getElementById('refresh-icon');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDomains();
+            checkSavedSession();
+            setTimeout(checkAppUpdate, 2000); // Check for updates after 2 seconds
+        });
+
+        // ================= UPDATE CHECKER SYSTEM =================
+        async function checkAppUpdate() {
+            try {
+                // Aapka current app version yahan par hai:
+                const APP_VERSION = "2.0"; 
+                
+                // MENE AAPKA SAHI USERNAME AUR REPO NAME YAHAN DAAL DIYA HAI 👇
+                const response = await fetch('https://raw.githubusercontent.com/bishalgamingassam-ui/nihar-otp-bot/main/version.json?nocache=' + new Date().getTime());
+                const serverData = await response.json();
+                
+                if (serverData.version !== APP_VERSION) {
+                    const popup = document.getElementById('update-popup');
+                    const updateBtn = document.getElementById('update-btn');
+                    popup.classList.replace('hidden', 'flex');
+                    updateBtn.onclick = () => {
+                        window.location.href = serverData.apk_link;
+                    };
+                }
+            } catch (error) {
+                console.log("Update check skipped - version.json not found yet");
+            }
+        }
+
+        // ================= EMAIL SYSTEM =================
+        // 1. Fetch available domains
+        async function fetchDomains() {
+            try {
+                const res = await fetch(API_BASE + '/domains');
+                const data = await res.json();
+                
+                domainSelect.innerHTML = '';
+                data['hydra:member'].forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d.domain;
+                    option.textContent = '@' + d.domain;
+                    domainSelect.appendChild(option);
+                });
+            } catch (err) {
+                domainSelect.innerHTML = '<option value="">Error loading domains</option>';
+            }
+        }
+
+        // 2. Check saved session
+        function checkSavedSession() {
+            const savedEmail = localStorage.getItem('nihar_otpbot_email');
+            const savedToken = localStorage.getItem('nihar_otpbot_token');
+
+            if (savedEmail && savedToken) {
+                currentEmail = savedEmail;
+                currentToken = savedToken;
+                showActiveEmailUI();
+                fetchMessages(true);
+                startAutoRefresh();
+            }
+        }
+
+        // 3. Create Custom Email Account
+        async function createCustomAccount() {
+            const username = usernameInput.value.trim().toLowerCase().replace(/[^a-z0-9.-]/g, ''); 
+            const domain = domainSelect.value;
+
+            if (!username) return showToast("Please enter a username first!", "error");
+            if (!domain) return showToast("Please wait for domains to load!", "error");
+            if (username.length < 3) return showToast("Username must be at least 3 characters!", "error");
+
+            const newEmailAddress = `${username}@${domain}`;
+            const password = Math.random().toString(36).slice(-10) + "A1!"; 
+
+            btnCreate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+            btnCreate.disabled = true;
+
+            try {
+                const accountRes = await fetch(API_BASE + '/accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: newEmailAddress, password: password })
+                });
+                
+                if (accountRes.status === 422) {
+                    throw new Error("This email is already taken. Try another name!");
+                } else if (!accountRes.ok) {
+                    throw new Error("Failed to create account on server.");
+                }
+
+                const tokenRes = await fetch(API_BASE + '/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: newEmailAddress, password: password })
+                });
+                const tokenData = await tokenRes.json();
+
+                currentEmail = newEmailAddress;
+                currentToken = tokenData.token;
+                localStorage.setItem('nihar_otpbot_email', currentEmail);
+                localStorage.setItem('nihar_otpbot_token', currentToken);
+
+                showToast("Email created successfully! 🎉", "success");
+                showActiveEmailUI();
+                fetchMessages();
+                startAutoRefresh();
+
+            } catch (error) {
+                showToast(error.message || "Something went wrong!", "error");
+            } finally {
+                btnCreate.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Create My Email';
+                btnCreate.disabled = false;
+            }
+        }
+
+        // 4. UI Switcher
+        function showActiveEmailUI() {
+            setupSection.classList.add('hidden');
+            activeSection.classList.remove('hidden');
+            currentEmailInput.value = currentEmail;
+            emailList.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-slate-400 py-12 fade-in">
+                    <div class="loader rounded-full border-4 border-t-4 border-slate-200 h-8 w-8 mb-4"></div>
+                    <p class="text-sm font-medium text-slate-500">Connecting to inbox...</p>
+                </div>`;
+        }
+
+        function resetAccount() {
+            localStorage.removeItem('nihar_otpbot_email');
+            localStorage.removeItem('nihar_otpbot_token');
+            currentEmail = '';
+            currentToken = '';
+            stopAutoRefresh();
+            
+            activeSection.classList.add('hidden');
+            setupSection.classList.remove('hidden');
+            usernameInput.value = '';
+            mailCount.classList.add('hidden');
+            
+            emailList.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-400 py-12">
+                <i class="fa-regular fa-envelope-open text-4xl mb-3 opacity-50"></i>
+                <p class="text-sm font-medium">Create an email to receive messages</p>
+            </div>`;
+            
+            showToast("Account deleted! You can create a new one.", "success");
+        }
+
+        // 5. Fetch Messages
+        async function fetchMessages(isManual = false) {
+            if (!currentToken || isFetching) return;
+            isFetching = true;
+            if (isManual) refreshIcon.classList.add('animate-spin');
+
+            try {
+                const res = await fetch(API_BASE + '/messages', {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+                
+                if (res.status === 401) {
+                    resetAccount(); 
+                    return;
+                }
+                
+                const data = await res.json();
+                const messages = data['hydra:member'];
+
+                if (!messages || messages.length === 0) {
+                    emailList.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-slate-400 py-12 fade-in">
+                            <i class="fa-solid fa-inbox text-4xl mb-3 opacity-30"></i>
+                            <p class="text-sm font-medium text-slate-500">Inbox is empty</p>
+                            <p class="text-[10px] mt-1">Waiting for incoming OTPs...</p>
+                        </div>`;
+                    mailCount.classList.add('hidden');
+                } else {
+                    renderMessages(messages);
+                    mailCount.textContent = messages.length;
+                    mailCount.classList.remove('hidden');
+
+                    if (messages.length > 0 && messages[0].id !== lastMessageId) {
+                        if (lastMessageId !== null) showToast("New mail received!", "success");
+                        lastMessageId = messages[0].id;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                isFetching = false;
+                if (isManual) setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
+            }
+        }
+
+        function renderMessages(messages) {
+            let html = '';
+            messages.forEach(msg => {
+                let timeStr = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const bgClass = msg.seen ? 'bg-white' : 'bg-blue-50/50';
+                const dotHtml = msg.seen ? '' : '<div class="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></div>';
+                
+                html += `
+                    <div onclick="readMessage('${msg.id}')" class="${bgClass} p-4 border-b border-slate-100 flex items-center gap-4 hover:bg-slate-50 cursor-pointer transition">
+                        <div class="flex-shrink-0 flex items-center justify-center w-4 h-4">
+                            ${dotHtml}
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 font-bold flex items-center justify-center flex-shrink-0 border border-slate-200">
+                           ${(msg.from.name || msg.from.address).charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <div class="flex justify-between items-baseline mb-0.5">
+                                <span class="font-bold text-sm text-slate-800 truncate pr-2">${msg.from.name || msg.from.address}</span>
+                                <span class="text-[10px] font-medium text-slate-500 flex-shrink-0">${timeStr}</span>
+                            </div>
+                            <p class="text-slate-600 text-xs truncate font-medium">${msg.subject || 'No Subject'}</p>
+                        </div>
+                    </div>`;
+            });
+            emailList.innerHTML = html;
+        }
+
+        // 6. Read Full Message
+        async function readMessage(id) {
+            const modal = document.getElementById('email-modal');
+            const loader = document.getElementById('modal-loader');
+            const bodyContainer = document.getElementById('modal-body');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('translate-x-full'), 10);
+            
+            loader.style.display = 'flex';
+            bodyContainer.innerHTML = '';
+
+            try {
+                const res = await fetch(API_BASE + '/messages/' + id, {
+                    headers: { 'Authorization': 'Bearer ' + currentToken }
+                });
+                const msg = await res.json();
+
+                document.getElementById('modal-subject').innerHTML = msg.subject || 'No Subject';
+                document.getElementById('modal-sender').textContent = msg.from.name || msg.from.address;
+                document.getElementById('modal-sender-email').textContent = msg.from.address;
+                document.getElementById('modal-date').textContent = new Date(msg.createdAt).toLocaleString();
+                
+                if (msg.html && msg.html.length > 0) {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.minHeight = '60vh';
+                    iframe.style.border = 'none';
+                    bodyContainer.appendChild(iframe);
+                    
+                    const iframeDoc = iframe.contentWindow.document;
+                    iframeDoc.open();
+                    iframeDoc.write(msg.html[0]);
+                    iframeDoc.close();
+                } else {
+                    bodyContainer.innerHTML = `<div class="whitespace-pre-wrap text-sm leading-relaxed p-4 bg-slate-50 rounded-xl border border-slate-100">${msg.text}</div>`;
+                }
+                
+                fetchMessages(); 
+            } catch (err) {
+                bodyContainer.innerHTML = '<p class="text-red-500 p-4">Network Error: Failed to load message.</p>';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('email-modal');
+            modal.classList.add('translate-x-full');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        // 7. Utilities
+        function copyEmail() {
+            const input = document.getElementById('current-email');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            
+            const btn = document.getElementById('btn-copy');
+            const oldHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+            btn.classList.replace('bg-slate-800', 'bg-green-600');
+            
+            showToast("Email address copied!", "success");
+            
+            setTimeout(() => {
+                btn.innerHTML = oldHtml;
+                btn.classList.replace('bg-green-600', 'bg-slate-800');
+            }, 2000);
+        }
+
+        let toastTimeout;
+        function showToast(msg, type = "info") {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            
+            document.getElementById('toast-msg').innerText = msg;
+            
+            if(type === "error") {
+                icon.className = "fa-solid fa-circle-exclamation text-red-400";
+            } else if(type === "success") {
+                icon.className = "fa-solid fa-circle-check text-green-400";
+            } else {
+                icon.className = "fa-solid fa-circle-info text-blue-400";
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-4');
+            }, 3000);
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            autoRefreshInterval = setInterval(() => fetchMessages(false), 5000);
+        }
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        }
+
+    </script>
+</body>
+</html>
+
+
+```
